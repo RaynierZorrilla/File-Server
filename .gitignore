@@ -1,15 +1,17 @@
+# Entorno virtual
 .venv/
+
+# Variables de entorno
 .env
+
+# Carpeta de archivos generados / uploads
 storage/
-__pycache__
+
+# Caché de Python
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pyw
-*.pyz
-*.pywz
-*.pyzw
-*.pyzwz
-*.pyzwzw
-*.pyzwzwz
-*.pyzwzwzw
+
+# Archivos de logs (si los usas)
+*.log
