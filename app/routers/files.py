@@ -16,7 +16,7 @@ from ..utils import ORIGINALS, THUMBS, sha256sum, image_size, make_thumbnail
 
 router = APIRouter()
 
-ALLOWED_EXTS = settings.allowed_image_exts | settings.allowed_doc_exts
+ALLOWED_EXTS = settings.allowed_image_exts | settings.allowed_doc_exts | settings.allowed_video_exts
 
 async def get_db() -> AsyncSession:
     async with async_session() as session:
@@ -88,7 +88,8 @@ async def list_files(
         if max_size is not None:
             stmt = stmt.where(FileModel.size <= max_size)
         stmt = stmt.order_by(FileModel.created_at.desc()).limit(limit).offset(offset)
-        res = (await session.exec(stmt)).all()
+        result = await session.execute(stmt)
+        res = result.scalars().all()
         return [FileOut.model_validate(x) for x in res]
 
 @router.get("/files/{file_id}", response_model=FileOut)

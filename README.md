@@ -1,6 +1,6 @@
 # Files & Images Server (FastAPI)
 
-Servidor minimalista y productivo para manejar archivos e imágenes:
+Servidor minimalista y productivo para manejar archivos, videos e imágenes:
 - Subida múltiple
 - Metadatos en SQLite
 - Descarga segura

@@ -9,7 +9,9 @@ class Settings(BaseModel):
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
     allowed_image_exts: set[str] = set(os.getenv("ALLOWED_IMAGE_EXTS", ".jpg,.jpeg,.png,.webp,.gif").split(","))
     allowed_doc_exts: set[str] = set(os.getenv("ALLOWED_DOC_EXTS", ".pdf,.txt,.csv").split(","))
+    allowed_video_exts: set[str] = set(os.getenv("ALLOWED_VIDEO_EXTS", ".mp4,.webm,.mov,.avi,.mkv,.flv,.wmv,.m4v").split(","))
     database_url: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./storage/meta.db")
     force_https: bool = os.getenv("FORCE_HTTPS", "false").lower() == "true"
+    cors_origins: list[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
 
 settings = Settings()
