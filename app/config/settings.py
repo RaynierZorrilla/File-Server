@@ -4,6 +4,7 @@ import os
 
 load_dotenv()
 
+
 class Settings(BaseModel):
     app_name: str = os.getenv("APP_NAME", "Files API")
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
@@ -14,4 +15,6 @@ class Settings(BaseModel):
     force_https: bool = os.getenv("FORCE_HTTPS", "false").lower() == "true"
     cors_origins: list[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
 
+
 settings = Settings()
+

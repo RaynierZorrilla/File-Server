@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import files as files_router
-from .db import init_db
+from .database import init_db
 from .config import settings
 
 app = FastAPI(title=settings.app_name)

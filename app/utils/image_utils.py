@@ -1,30 +1,19 @@
-import hashlib
 from pathlib import Path
 from typing import Tuple
 from PIL import Image
 
-STORAGE = Path("storage")
-ORIGINALS = STORAGE / "originals"
-THUMBS = STORAGE / "thumbs"
-
-ORIGINALS.mkdir(parents=True, exist_ok=True)
-THUMBS.mkdir(parents=True, exist_ok=True)
-
-
-def sha256sum(data: bytes) -> str:
-    h = hashlib.sha256()
-    h.update(data)
-    return h.hexdigest()
-
 
 def image_size(path: Path) -> Tuple[int, int] | tuple[None, None]:
+    """Obtiene las dimensiones de una imagen"""
     try:
         with Image.open(path) as im:
             return im.width, im.height
     except Exception:
         return None, None
 
+
 def make_thumbnail(src: Path, dst: Path, w: int | None, h: int | None, fit: str = "contain"):
+    """Genera un thumbnail de una imagen"""
     dst.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(src) as im:
         if not w and not h:
@@ -50,3 +39,4 @@ def make_thumbnail(src: Path, dst: Path, w: int | None, h: int | None, fit: str 
         else:
             im.thumbnail((w or 99999, h or 99999))
         im.save(dst)
+
