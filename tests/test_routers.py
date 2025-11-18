@@ -38,6 +38,17 @@ async def test_root_endpoint(client):
 
 
 @pytest.mark.asyncio
+async def test_health_check(client):
+    """Test del endpoint de health check"""
+    response = await client.get("/healthz")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert data["status"] == "healthy"
+
+
+@pytest.mark.asyncio
 async def test_upload_file(client, image_bytes):
     """Test subir un archivo"""
     files = {"files": ("test.jpg", image_bytes, "image/jpeg")}

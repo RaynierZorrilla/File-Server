@@ -28,3 +28,7 @@ app.include_router(files_router.router)
 @app.get("/")
 async def root():
     return {"status": "ok", "name": settings.app_name}
+
+@app.get("/healthz", include_in_schema=False)
+async def health_check():
+    return {"status": "healthy"}
