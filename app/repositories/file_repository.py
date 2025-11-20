@@ -2,6 +2,7 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from ..models import File as FileModel
+from sqlalchemy import delete
 
 
 class FileRepository:
@@ -56,6 +57,7 @@ class FileRepository:
     
     async def delete(self, file: FileModel) -> None:
         """Elimina un archivo de la base de datos"""
-        self.session.delete(file)
+        stmt = delete(FileModel).where(FileModel.id == file.id)
+        await self.session.execute(stmt)
         await self.session.commit()
 

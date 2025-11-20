@@ -5,15 +5,37 @@ import pytest
 from httpx import AsyncClient
 from io import BytesIO
 from PIL import Image
+from unittest.mock import AsyncMock
 
 from app.main import app
+from app.utils.security import get_current_user, get_db as security_get_db
+from app.routers.files import get_db as files_get_db
 
 
 @pytest.fixture
-async def client():
+async def client(test_user, test_db_session):
     """Cliente de prueba asíncrono para FastAPI"""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    # Override get_current_user para usar el usuario de prueba directamente
+    async def override_get_current_user():
+        return test_user
+    
+    # Override get_db en security para usar la sesión de prueba
+    async def override_security_get_db():
+        yield test_db_session
+    
+    # Override get_db en files para usar la sesión de prueba
+    async def override_files_get_db():
+        yield test_db_session
+    
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[security_get_db] = override_security_get_db
+    app.dependency_overrides[files_get_db] = override_files_get_db
+    
+    async with AsyncClient(app=app, base_url="http://test", follow_redirects=True) as ac:
         yield ac
+    
+    # Limpiar overrides después del test
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -227,4 +249,25 @@ async def test_delete_file_not_found(client):
     response = await client.delete("/files/99999")
     
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_upload_file_requires_auth(image_bytes):
+    """Test que subir archivo requiere autenticación"""
+    # Crear un cliente sin override de dependencias
+    async with AsyncClient(app=app, base_url="http://test", follow_redirects=True) as client:
+        files = {"files": ("test.jpg", image_bytes, "image/jpeg")}
+        response = await client.post("/upload", files=files)
+        
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_list_files_requires_auth():
+    """Test que listar archivos requiere autenticación"""
+    # Crear un cliente sin override de dependencias
+    async with AsyncClient(app=app, base_url="http://test", follow_redirects=True) as client:
+        response = await client.get("/files")
+        
+        assert response.status_code == 401
 

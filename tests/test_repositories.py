@@ -63,7 +63,7 @@ async def test_get_by_uuid(test_db_session, sample_file_data):
 
 
 @pytest.mark.asyncio
-async def test_list_files(test_db_session, sample_file_data):
+async def test_list_files(test_db_session, sample_file_data, test_user_id):
     """Test listar archivos"""
     repository = FileRepository(test_db_session)
     
@@ -76,13 +76,13 @@ async def test_list_files(test_db_session, sample_file_data):
         await repository.create(file)
     
     # Listar todos
-    files = await repository.list(limit=10)
+    files = await repository.list(user_id=test_user_id, limit=10)
     
     assert len(files) == 5
 
 
 @pytest.mark.asyncio
-async def test_list_files_with_limit(test_db_session, sample_file_data):
+async def test_list_files_with_limit(test_db_session, sample_file_data, test_user_id):
     """Test listar archivos con límite"""
     repository = FileRepository(test_db_session)
     
@@ -94,13 +94,13 @@ async def test_list_files_with_limit(test_db_session, sample_file_data):
         await repository.create(file)
     
     # Listar con límite
-    files = await repository.list(limit=3)
+    files = await repository.list(user_id=test_user_id, limit=3)
     
     assert len(files) == 3
 
 
 @pytest.mark.asyncio
-async def test_list_files_with_offset(test_db_session, sample_file_data):
+async def test_list_files_with_offset(test_db_session, sample_file_data, test_user_id):
     """Test listar archivos con offset"""
     repository = FileRepository(test_db_session)
     
@@ -112,13 +112,13 @@ async def test_list_files_with_offset(test_db_session, sample_file_data):
         await repository.create(file)
     
     # Listar con offset
-    files = await repository.list(limit=10, offset=2)
+    files = await repository.list(user_id=test_user_id, limit=10, offset=2)
     
     assert len(files) == 3
 
 
 @pytest.mark.asyncio
-async def test_list_files_filter_by_content_type(test_db_session, sample_file_data):
+async def test_list_files_filter_by_content_type(test_db_session, sample_file_data, test_user_id):
     """Test filtrar archivos por content_type"""
     repository = FileRepository(test_db_session)
     
@@ -136,14 +136,14 @@ async def test_list_files_filter_by_content_type(test_db_session, sample_file_da
     await repository.create(file2)
     
     # Filtrar por content_type
-    files = await repository.list(content_type="image/jpeg")
+    files = await repository.list(user_id=test_user_id, content_type="image/jpeg")
     
     assert len(files) == 1
     assert files[0].content_type == "image/jpeg"
 
 
 @pytest.mark.asyncio
-async def test_list_files_search_by_name(test_db_session, sample_file_data):
+async def test_list_files_search_by_name(test_db_session, sample_file_data, test_user_id):
     """Test buscar archivos por nombre"""
     repository = FileRepository(test_db_session)
     
@@ -161,14 +161,14 @@ async def test_list_files_search_by_name(test_db_session, sample_file_data):
     await repository.create(file2)
     
     # Buscar por nombre
-    files = await repository.list(q="photo")
+    files = await repository.list(user_id=test_user_id, q="photo")
     
     assert len(files) == 1
     assert "photo" in files[0].original_name.lower()
 
 
 @pytest.mark.asyncio
-async def test_list_files_filter_by_size(test_db_session, sample_file_data):
+async def test_list_files_filter_by_size(test_db_session, sample_file_data, test_user_id):
     """Test filtrar archivos por tamaño"""
     repository = FileRepository(test_db_session)
     
@@ -181,15 +181,15 @@ async def test_list_files_filter_by_size(test_db_session, sample_file_data):
         await repository.create(file)
     
     # Filtrar por tamaño mínimo
-    files = await repository.list(min_size=1000)
+    files = await repository.list(user_id=test_user_id, min_size=1000)
     assert len(files) == 2
     
     # Filtrar por tamaño máximo
-    files = await repository.list(max_size=500)
+    files = await repository.list(user_id=test_user_id, max_size=500)
     assert len(files) == 2
     
     # Filtrar por rango
-    files = await repository.list(min_size=500, max_size=1500)
+    files = await repository.list(user_id=test_user_id, min_size=500, max_size=1500)
     assert len(files) == 2
 
 

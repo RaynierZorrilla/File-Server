@@ -33,14 +33,14 @@ def image_bytes():
 
 
 @pytest.mark.asyncio
-async def test_upload_file_success(test_db_session, temp_storage, mock_upload_file, image_bytes):
+async def test_upload_file_success(test_db_session, temp_storage, mock_upload_file, image_bytes, test_user_id):
     """Test subir archivo exitosamente"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         with patch("app.services.file_service.THUMBS", temp_storage["thumbs"]):
             service = FileService(test_db_session)
             
             file = mock_upload_file("test.jpg", image_bytes, "image/jpeg")
-            result = await service.upload_file(file)
+            result = await service.upload_file(file, test_user_id)
             
             assert result.original_name == "test.jpg"
             assert result.content_type == "image/jpeg"
@@ -51,7 +51,7 @@ async def test_upload_file_success(test_db_session, temp_storage, mock_upload_fi
 
 
 @pytest.mark.asyncio
-async def test_upload_file_too_large(test_db_session, temp_storage, mock_upload_file):
+async def test_upload_file_too_large(test_db_session, temp_storage, mock_upload_file, test_user_id):
     """Test subir archivo que excede el tamaño máximo"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         with patch("app.services.file_service.settings") as mock_settings:
@@ -67,13 +67,13 @@ async def test_upload_file_too_large(test_db_session, temp_storage, mock_upload_
             file = mock_upload_file("large.jpg", large_content)
             
             with pytest.raises(HTTPException) as exc_info:
-                await service.upload_file(file)
+                await service.upload_file(file, test_user_id)
             
             assert exc_info.value.status_code == 413
 
 
 @pytest.mark.asyncio
-async def test_upload_file_invalid_extension(test_db_session, temp_storage, mock_upload_file, image_bytes):
+async def test_upload_file_invalid_extension(test_db_session, temp_storage, mock_upload_file, image_bytes, test_user_id):
     """Test subir archivo con extensión no permitida"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         service = FileService(test_db_session)
@@ -81,14 +81,14 @@ async def test_upload_file_invalid_extension(test_db_session, temp_storage, mock
         file = mock_upload_file("test.exe", image_bytes)
         
         with pytest.raises(HTTPException) as exc_info:
-            await service.upload_file(file)
+            await service.upload_file(file, test_user_id)
         
         assert exc_info.value.status_code == 400
         assert "no permitida" in exc_info.value.detail.lower()
 
 
 @pytest.mark.asyncio
-async def test_upload_files_multiple(test_db_session, temp_storage, mock_upload_file, image_bytes):
+async def test_upload_files_multiple(test_db_session, temp_storage, mock_upload_file, image_bytes, test_user_id):
     """Test subir múltiples archivos"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         with patch("app.services.file_service.THUMBS", temp_storage["thumbs"]):
@@ -99,7 +99,7 @@ async def test_upload_files_multiple(test_db_session, temp_storage, mock_upload_
                 mock_upload_file("test2.jpg", image_bytes),
             ]
             
-            results = await service.upload_files(files)
+            results = await service.upload_files(files, test_user_id)
             
             assert len(results) == 2
             assert results[0].original_name == "test1.jpg"
@@ -107,7 +107,7 @@ async def test_upload_files_multiple(test_db_session, temp_storage, mock_upload_
 
 
 @pytest.mark.asyncio
-async def test_list_files(test_db_session, sample_file_data):
+async def test_list_files(test_db_session, sample_file_data, test_user_id):
     """Test listar archivos"""
     service = FileService(test_db_session)
     
@@ -123,13 +123,13 @@ async def test_list_files(test_db_session, sample_file_data):
         await repository.create(file)
     
     # Listar
-    results = await service.list_files(limit=10)
+    results = await service.list_files(user_id=test_user_id, limit=10)
     
     assert len(results) == 3
 
 
 @pytest.mark.asyncio
-async def test_get_file_success(test_db_session, sample_file_data):
+async def test_get_file_success(test_db_session, sample_file_data, test_user_id):
     """Test obtener archivo existente"""
     service = FileService(test_db_session)
     
@@ -140,25 +140,25 @@ async def test_get_file_success(test_db_session, sample_file_data):
     created = await repository.create(file)
     
     # Obtener
-    result = await service.get_file(created.id)
+    result = await service.get_file(created.id, test_user_id)
     
     assert result.id == created.id
     assert result.uuid == sample_file_data["uuid"]
 
 
 @pytest.mark.asyncio
-async def test_get_file_not_found(test_db_session):
+async def test_get_file_not_found(test_db_session, test_user_id):
     """Test obtener archivo inexistente"""
     service = FileService(test_db_session)
     
     with pytest.raises(HTTPException) as exc_info:
-        await service.get_file(999)
+        await service.get_file(999, test_user_id)
     
     assert exc_info.value.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_file_path_success(test_db_session, temp_storage, sample_file_data, image_bytes):
+async def test_get_file_path_success(test_db_session, temp_storage, sample_file_data, image_bytes, test_user_id):
     """Test obtener ruta de archivo"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         service = FileService(test_db_session)
@@ -174,7 +174,7 @@ async def test_get_file_path_success(test_db_session, temp_storage, sample_file_
         file_path.write_bytes(image_bytes)
         
         # Obtener ruta
-        path, content_type, original_name = await service.get_file_path(created.id)
+        path, content_type, original_name = await service.get_file_path(created.id, test_user_id)
         
         assert path == file_path
         assert content_type == sample_file_data["content_type"]
@@ -182,18 +182,18 @@ async def test_get_file_path_success(test_db_session, temp_storage, sample_file_
 
 
 @pytest.mark.asyncio
-async def test_get_file_path_not_found(test_db_session):
+async def test_get_file_path_not_found(test_db_session, test_user_id):
     """Test obtener ruta de archivo inexistente"""
     service = FileService(test_db_session)
     
     with pytest.raises(HTTPException) as exc_info:
-        await service.get_file_path(999)
+        await service.get_file_path(999, test_user_id)
     
     assert exc_info.value.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_file_path_file_deleted(test_db_session, temp_storage, sample_file_data):
+async def test_get_file_path_file_deleted(test_db_session, temp_storage, sample_file_data, test_user_id):
     """Test obtener ruta de archivo eliminado físicamente"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         service = FileService(test_db_session)
@@ -206,13 +206,13 @@ async def test_get_file_path_file_deleted(test_db_session, temp_storage, sample_
         
         # Intentar obtener ruta
         with pytest.raises(HTTPException) as exc_info:
-            await service.get_file_path(created.id)
+            await service.get_file_path(created.id, test_user_id)
         
         assert exc_info.value.status_code == 410
 
 
 @pytest.mark.asyncio
-async def test_get_thumbnail_path_success(test_db_session, temp_storage, sample_file_data, image_bytes):
+async def test_get_thumbnail_path_success(test_db_session, temp_storage, sample_file_data, image_bytes, test_user_id):
     """Test obtener/generar thumbnail"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         with patch("app.services.file_service.THUMBS", temp_storage["thumbs"]):
@@ -229,14 +229,14 @@ async def test_get_thumbnail_path_success(test_db_session, temp_storage, sample_
             file_path.write_bytes(image_bytes)
             
             # Obtener thumbnail
-            thumb_path, content_type = await service.get_thumbnail_path(created.id, w=200, h=200)
+            thumb_path, content_type = await service.get_thumbnail_path(created.id, test_user_id, w=200, h=200)
             
             assert thumb_path.exists()
             assert content_type == sample_file_data["content_type"]
 
 
 @pytest.mark.asyncio
-async def test_get_thumbnail_path_not_image(test_db_session, sample_file_data):
+async def test_get_thumbnail_path_not_image(test_db_session, sample_file_data, test_user_id):
     """Test obtener thumbnail de archivo que no es imagen"""
     service = FileService(test_db_session)
     
@@ -249,13 +249,13 @@ async def test_get_thumbnail_path_not_image(test_db_session, sample_file_data):
     created = await repository.create(file)
     
     with pytest.raises(HTTPException) as exc_info:
-        await service.get_thumbnail_path(created.id)
+        await service.get_thumbnail_path(created.id, test_user_id)
     
     assert exc_info.value.status_code == 400
 
 
 @pytest.mark.asyncio
-async def test_delete_file_success(test_db_session, temp_storage, sample_file_data, image_bytes):
+async def test_delete_file_success(test_db_session, temp_storage, sample_file_data, image_bytes, test_user_id):
     """Test eliminar archivo"""
     with patch("app.services.file_service.ORIGINALS", temp_storage["originals"]):
         with patch("app.services.file_service.THUMBS", temp_storage["thumbs"]):
@@ -276,7 +276,7 @@ async def test_delete_file_success(test_db_session, temp_storage, sample_file_da
             thumb_path.write_bytes(image_bytes)
             
             # Eliminar
-            await service.delete_file(created.id)
+            await service.delete_file(created.id, test_user_id)
             
             # Verificar que fue eliminado de BD
             deleted = await repository.get_by_id(created.id)
