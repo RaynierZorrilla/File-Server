@@ -14,5 +14,6 @@ class File(SQLModel, table=True):
     checksum_sha256: str
     width: Optional[int] = None
     height: Optional[int] = None
+    user_id: str = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

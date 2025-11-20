@@ -2,6 +2,7 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from ..models import File as FileModel
+from sqlalchemy import delete
 
 
 class FileRepository:
@@ -29,6 +30,7 @@ class FileRepository:
     
     async def list(
         self,
+        user_id: str,
         limit: int = 20,
         offset: int = 0,
         content_type: Optional[str] = None,
@@ -36,8 +38,8 @@ class FileRepository:
         min_size: Optional[int] = None,
         max_size: Optional[int] = None,
     ) -> List[FileModel]:
-        """Lista archivos con filtros opcionales"""
-        stmt = select(FileModel)
+        """Lista archivos del usuario con filtros opcionales"""
+        stmt = select(FileModel).where(FileModel.user_id == user_id)
         
         if content_type:
             stmt = stmt.where(FileModel.content_type == content_type)
@@ -55,6 +57,7 @@ class FileRepository:
     
     async def delete(self, file: FileModel) -> None:
         """Elimina un archivo de la base de datos"""
-        self.session.delete(file)
+        stmt = delete(FileModel).where(FileModel.id == file.id)
+        await self.session.execute(stmt)
         await self.session.commit()
 

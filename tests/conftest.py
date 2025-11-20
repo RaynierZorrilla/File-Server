@@ -7,9 +7,11 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
+import uuid
 
-from app.models import File
+from app.models import File, User
 from app.config import Settings
+from app.utils.security import hash_password, create_access_token
 
 
 # Configuración de pytest-asyncio
@@ -81,7 +83,40 @@ def temp_storage(tmp_path):
 
 
 @pytest.fixture
-def sample_file_data():
+async def test_user(test_db_session):
+    """Crea un usuario de prueba"""
+    user = User(
+        id=str(uuid.uuid4()),
+        email="test@example.com",
+        password_hash=hash_password("testpassword123"),
+        full_name="Test User"
+    )
+    test_db_session.add(user)
+    await test_db_session.commit()
+    await test_db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def test_user_id(test_user):
+    """ID del usuario de prueba"""
+    return test_user.id
+
+
+@pytest.fixture
+def auth_token(test_user):
+    """Token JWT para autenticación en tests"""
+    return create_access_token(data={"sub": test_user.id})
+
+
+@pytest.fixture
+def auth_headers(auth_token):
+    """Headers de autenticación para requests"""
+    return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest.fixture
+def sample_file_data(test_user):
     """Datos de ejemplo para un archivo"""
     return {
         "uuid": "test-uuid-123",
@@ -93,5 +128,6 @@ def sample_file_data():
         "checksum_sha256": "a" * 64,
         "width": 800,
         "height": 600,
+        "user_id": test_user.id,
     }
 

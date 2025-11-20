@@ -24,7 +24,7 @@ async def upload(
     user: User = Depends(get_current_user),
 ):
     """Endpoint para subir uno o más archivos"""
-    return await service.upload_files(files)
+    return await service.upload_files(files, user.id)
 
 
 @router.get("/files", response_model=List[FileOut])
@@ -38,8 +38,9 @@ async def list_files(
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
-    """Endpoint para listar archivos con filtros opcionales"""
+    """Endpoint para listar archivos del usuario con filtros opcionales"""
     return await service.list_files(
+        user_id=user.id,
         limit=limit,
         offset=offset,
         content_type=content_type,
@@ -55,8 +56,8 @@ async def get_file(
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
-    """Endpoint para obtener un archivo por ID"""
-    return await service.get_file(file_id)
+    """Endpoint para obtener un archivo por ID del usuario"""
+    return await service.get_file(file_id, user.id)
 
 
 @router.get("/files/{file_id}/download")
@@ -65,8 +66,8 @@ async def download(
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
-    """Endpoint para descargar un archivo"""
-    path, content_type, original_name = await service.get_file_path(file_id)
+    """Endpoint para descargar un archivo del usuario"""
+    path, content_type, original_name = await service.get_file_path(file_id, user.id)
     return FileResponse(
         path,
         media_type=content_type,
@@ -83,8 +84,8 @@ async def thumbnail(
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
-    """Endpoint para obtener o generar un thumbnail de una imagen"""
-    path, content_type = await service.get_thumbnail_path(file_id, w, h, fit)
+    """Endpoint para obtener o generar un thumbnail de una imagen del usuario"""
+    path, content_type = await service.get_thumbnail_path(file_id, user.id, w, h, fit)
     return FileResponse(path, media_type=content_type)
 
 
@@ -94,6 +95,6 @@ async def delete(
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
-    """Endpoint para eliminar un archivo"""
-    await service.delete_file(file_id)
+    """Endpoint para eliminar un archivo del usuario"""
+    await service.delete_file(file_id, user.id)
     return {"ok": True}

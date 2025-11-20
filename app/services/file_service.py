@@ -19,7 +19,7 @@ class FileService:
         self.repository = FileRepository(session)
         self.allowed_exts = settings.allowed_image_exts | settings.allowed_doc_exts | settings.allowed_video_exts
     
-    async def upload_file(self, file: UploadFile) -> FileOut:
+    async def upload_file(self, file: UploadFile, user_id: str) -> FileOut:
         """Sube un archivo y guarda sus metadatos"""
         # Validar tamaño
         blob = await file.read()
@@ -61,6 +61,7 @@ class FileService:
             checksum_sha256=csum,
             width=width,
             height=height,
+            user_id=user_id,
         )
         
         # Guardar en base de datos
@@ -73,16 +74,17 @@ class FileService:
         
         return FileOut.model_validate(created_file)
     
-    async def upload_files(self, files: List[UploadFile]) -> List[FileOut]:
+    async def upload_files(self, files: List[UploadFile], user_id: str) -> List[FileOut]:
         """Sube múltiples archivos"""
         results = []
         for file in files:
-            result = await self.upload_file(file)
+            result = await self.upload_file(file, user_id)
             results.append(result)
         return results
     
     async def list_files(
         self,
+        user_id: str,
         limit: int = 20,
         offset: int = 0,
         content_type: Optional[str] = None,
@@ -90,8 +92,9 @@ class FileService:
         min_size: Optional[int] = None,
         max_size: Optional[int] = None,
     ) -> List[FileOut]:
-        """Lista archivos con filtros"""
+        """Lista archivos del usuario con filtros"""
         files = await self.repository.list(
+            user_id=user_id,
             limit=limit,
             offset=offset,
             content_type=content_type,
@@ -101,18 +104,22 @@ class FileService:
         )
         return [FileOut.model_validate(f) for f in files]
     
-    async def get_file(self, file_id: int) -> FileOut:
-        """Obtiene un archivo por ID"""
+    async def get_file(self, file_id: int, user_id: str) -> FileOut:
+        """Obtiene un archivo por ID del usuario"""
         file = await self.repository.get_by_id(file_id)
         if not file:
             raise HTTPException(404, detail="No encontrado")
+        if file.user_id != user_id:
+            raise HTTPException(403, detail="No tienes permiso para acceder a este archivo")
         return FileOut.model_validate(file)
     
-    async def get_file_path(self, file_id: int) -> Tuple[Path, str, str]:
+    async def get_file_path(self, file_id: int, user_id: str) -> Tuple[Path, str, str]:
         """Obtiene la ruta del archivo físico, content type y nombre original"""
         file = await self.repository.get_by_id(file_id)
         if not file:
             raise HTTPException(404, detail="No encontrado")
+        if file.user_id != user_id:
+            raise HTTPException(403, detail="No tienes permiso para acceder a este archivo")
         
         path = ORIGINALS / file.storage_name
         if not path.exists():
@@ -123,6 +130,7 @@ class FileService:
     async def get_thumbnail_path(
         self,
         file_id: int,
+        user_id: str,
         w: Optional[int] = None,
         h: Optional[int] = None,
         fit: str = "contain",
@@ -131,6 +139,8 @@ class FileService:
         file = await self.repository.get_by_id(file_id)
         if not file:
             raise HTTPException(404, detail="No encontrado")
+        if file.user_id != user_id:
+            raise HTTPException(403, detail="No tienes permiso para acceder a este archivo")
         
         if not file.content_type.startswith("image/"):
             raise HTTPException(400, detail="El archivo no es una imagen")
@@ -149,11 +159,13 @@ class FileService:
         
         return dst, file.content_type
     
-    async def delete_file(self, file_id: int) -> None:
+    async def delete_file(self, file_id: int, user_id: str) -> None:
         """Elimina un archivo y sus thumbnails"""
         file = await self.repository.get_by_id(file_id)
         if not file:
             raise HTTPException(404, detail="No encontrado")
+        if file.user_id != user_id:
+            raise HTTPException(403, detail="No tienes permiso para eliminar este archivo")
         
         # Eliminar archivo físico
         (ORIGINALS / file.storage_name).unlink(missing_ok=True)
