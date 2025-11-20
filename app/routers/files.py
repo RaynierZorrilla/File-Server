@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import async_session
 from ..services import FileService
 from ..schemas import FileOut
+from ..models import User
+from ..utils.security import get_current_user
 
 router = APIRouter()
 
@@ -25,6 +27,7 @@ def get_file_service(session: AsyncSession = Depends(get_db)) -> FileService:
 async def upload(
     files: List[UploadFile] = UpFile(...),
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para subir uno o más archivos"""
     return await service.upload_files(files)
@@ -39,6 +42,7 @@ async def list_files(
     min_size: Optional[int] = Query(None, ge=0),
     max_size: Optional[int] = Query(None, ge=0),
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para listar archivos con filtros opcionales"""
     return await service.list_files(
@@ -55,6 +59,7 @@ async def list_files(
 async def get_file(
     file_id: int,
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para obtener un archivo por ID"""
     return await service.get_file(file_id)
@@ -64,6 +69,7 @@ async def get_file(
 async def download(
     file_id: int,
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para descargar un archivo"""
     path, content_type, original_name = await service.get_file_path(file_id)
@@ -81,6 +87,7 @@ async def thumbnail(
     h: Optional[int] = Query(None, ge=1, le=4000),
     fit: str = Query("contain", pattern="^(contain|crop)$"),
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para obtener o generar un thumbnail de una imagen"""
     path, content_type = await service.get_thumbnail_path(file_id, w, h, fit)
@@ -91,6 +98,7 @@ async def thumbnail(
 async def delete(
     file_id: int,
     service: FileService = Depends(get_file_service),
+    user: User = Depends(get_current_user),
 ):
     """Endpoint para eliminar un archivo"""
     await service.delete_file(file_id)
