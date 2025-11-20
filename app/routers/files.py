@@ -7,15 +7,9 @@ from ..database import async_session
 from ..services import FileService
 from ..schemas import FileOut
 from ..models import User
-from ..utils.security import get_current_user
+from ..utils.security import get_current_user, get_db
 
 router = APIRouter()
-
-
-async def get_db() -> AsyncSession:
-    """Dependency para obtener sesión de base de datos"""
-    async with async_session() as session:
-        yield session
 
 
 def get_file_service(session: AsyncSession = Depends(get_db)) -> FileService:

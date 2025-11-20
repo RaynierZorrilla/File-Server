@@ -55,6 +55,6 @@ class FileRepository:
     
     async def delete(self, file: FileModel) -> None:
         """Elimina un archivo de la base de datos"""
-        await self.session.delete(file)
+        self.session.delete(file)
         await self.session.commit()
 
