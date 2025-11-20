@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import files as files_router
+from .routers import auth as auth_router
 from .database import init_db
 from .config import settings
 
@@ -23,6 +24,7 @@ app.add_middleware(
 async def on_startup():
     await init_db()
 
+app.include_router(auth_router.router)
 app.include_router(files_router.router)
 
 @app.get("/")

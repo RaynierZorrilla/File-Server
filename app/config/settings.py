@@ -14,6 +14,7 @@ class Settings(BaseModel):
     database_url: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./storage/meta.db")
     force_https: bool = os.getenv("FORCE_HTTPS", "false").lower() == "true"
     cors_origins: list[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "56f84346dd43250488c446dadce037b8e853cbfa56bef456759815370c4dc9c7")
 
 
 settings = Settings()
