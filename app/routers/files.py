@@ -35,6 +35,9 @@ async def list_files(
     q: Optional[str] = None,
     min_size: Optional[int] = Query(None, ge=0),
     max_size: Optional[int] = Query(None, ge=0),
+    ext: Optional[str] = Query(None, description="Filtrar por extensión(es). Múltiples separadas por coma (ej: .jpg,.png,.mp4 o jpg,pdf,csv)"),
+    date_from: Optional[str] = Query(None, description="Fecha desde (formato: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Fecha hasta (formato: YYYY-MM-DD)"),
     service: FileService = Depends(get_file_service),
     user: User = Depends(get_current_user),
 ):
@@ -47,6 +50,9 @@ async def list_files(
         q=q,
         min_size=min_size,
         max_size=max_size,
+        ext=ext,
+        date_from=date_from,
+        date_to=date_to,
     )
 
 

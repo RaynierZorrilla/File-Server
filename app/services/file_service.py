@@ -91,6 +91,9 @@ class FileService:
         q: Optional[str] = None,
         min_size: Optional[int] = None,
         max_size: Optional[int] = None,
+        ext: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
     ) -> List[FileOut]:
         """Lista archivos del usuario con filtros"""
         files = await self.repository.list(
@@ -101,6 +104,9 @@ class FileService:
             q=q,
             min_size=min_size,
             max_size=max_size,
+            ext=ext,
+            date_from=date_from,
+            date_to=date_to,
         )
         return [FileOut.model_validate(f) for f in files]
     

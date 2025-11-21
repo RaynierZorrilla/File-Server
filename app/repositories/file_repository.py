@@ -1,6 +1,7 @@
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
+from datetime import datetime
 from ..models import File as FileModel
 from sqlalchemy import delete
 
@@ -37,6 +38,9 @@ class FileRepository:
         q: Optional[str] = None,
         min_size: Optional[int] = None,
         max_size: Optional[int] = None,
+        ext: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
     ) -> List[FileModel]:
         """Lista archivos del usuario con filtros opcionales"""
         stmt = select(FileModel).where(FileModel.user_id == user_id)
@@ -50,6 +54,35 @@ class FileRepository:
             stmt = stmt.where(FileModel.size >= min_size)
         if max_size is not None:
             stmt = stmt.where(FileModel.size <= max_size)
+        if ext:
+            # Normalizar extensiones: puede ser una o múltiples separadas por comas
+            ext_list = [e.strip() for e in ext.split(",")]
+            # Agregar punto si no lo tiene y convertir a minúsculas
+            ext_normalized = []
+            for e in ext_list:
+                if e:
+                    ext_normalized.append(e if e.startswith(".") else f".{e}")
+            if ext_normalized:
+                # Usar IN para múltiples extensiones
+                stmt = stmt.where(FileModel.ext.in_([e.lower() for e in ext_normalized]))
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+                stmt = stmt.where(FileModel.created_at >= date_from_obj)
+            except ValueError:
+                # Si el formato es incorrecto, ignorar el filtro
+                pass
+        if date_to:
+            try:
+                # Incluir todo el día (hasta las 23:59:59)
+                date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+                # Agregar un día y restar un segundo para incluir todo el día
+                from datetime import timedelta
+                date_to_obj = date_to_obj + timedelta(days=1) - timedelta(seconds=1)
+                stmt = stmt.where(FileModel.created_at <= date_to_obj)
+            except ValueError:
+                # Si el formato es incorrecto, ignorar el filtro
+                pass
         
         stmt = stmt.order_by(FileModel.created_at.desc()).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
